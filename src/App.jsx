@@ -154,11 +154,12 @@ const Ramadan = () => {
         <header className="relative z-50 flex flex-col md:flex-row justify-between items-center gap-4 mb-8 bg-slate-900/40 p-4 rounded-2xl border border-slate-700/50 backdrop-blur-xl shadow-lg">
           <div className="flex items-center gap-4 w-full md:w-auto">
             <div className="w-12 h-12 bg-gradient-to-br from-emerald-500/20 to-teal-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20 shadow-inner">
+              {/* Logo Image Placeholder - Replace src with your favicon path if needed */}
               <Moon className="text-emerald-400 w-6 h-6 fill-current" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Ramadan <span className="text-emerald-400">2026</span></h1>
-              <p className="text-xs text-slate-400 font-medium tracking-wide uppercase">Sehri & Ifter Time</p>
+              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Ramadan <span className="text-emerald-400">2026</span></h1>
+              <p className="text-[10px] md:text-xs text-slate-400 font-medium tracking-wide uppercase">Sehri & Iftar Time</p>
             </div>
           </div>
 
@@ -170,7 +171,7 @@ const Ramadan = () => {
             >
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-emerald-500" />
-                <span className="font-medium text-sm">{currentDistrictName || "জেলা সিলেক্ট করুন"}</span>
+                <span className="font-medium text-sm truncate">{currentDistrictName || "জেলা সিলেক্ট করুন"}</span>
               </div>
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />
             </button>
@@ -224,25 +225,26 @@ const Ramadan = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 relative z-10">
           
           {/* Main Timer Card */}
-          <div className="lg:col-span-2 bg-gradient-to-br from-slate-800/40 via-slate-900/60 to-slate-950/80 border border-slate-700/50 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl backdrop-blur-md">
+          <div className="lg:col-span-2 bg-gradient-to-br from-slate-800/40 via-slate-900/60 to-slate-950/80 border border-slate-700/50 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl backdrop-blur-md">
             <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[80px] opacity-20 ${nextEvent?.type === 'sehri' ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
             
-            <div className="absolute top-6 right-6 p-2 bg-white/5 rounded-full border border-white/5 backdrop-blur-sm">
-               {nextEvent?.type === 'sehri' ? <Moon className="w-6 h-6 text-blue-300" /> : <Sun className="w-6 h-6 text-orange-300" />}
+            <div className="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-white/5 rounded-full border border-white/5 backdrop-blur-sm">
+               {nextEvent?.type === 'sehri' ? <Moon className="w-5 h-5 md:w-6 md:h-6 text-blue-300" /> : <Sun className="w-5 h-5 md:w-6 md:h-6 text-orange-300" />}
             </div>
             
             {nextEvent ? (
               <>
-                <h2 className={`text-lg font-medium tracking-wide mb-2 flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/50 border border-slate-700/50 ${nextEvent?.type === 'sehri' ? 'text-blue-300' : 'text-orange-300'}`}>
-                  <Clock className="w-4 h-4" /> {nextEvent.label}
+                <h2 className={`text-sm md:text-lg font-medium tracking-wide mb-2 flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/50 border border-slate-700/50 ${nextEvent?.type === 'sehri' ? 'text-blue-300' : 'text-orange-300'}`}>
+                  <Clock className="w-3 h-3 md:w-4 md:h-4" /> {nextEvent.label}
                 </h2>
                 
-                <div className="relative z-10 text-5xl sm:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 font-mono tracking-tighter my-6 drop-shadow-sm">
+                {/* FIXED: Font size reduced for mobile and whitespace-nowrap added */}
+                <div className="relative z-10 text-[2.5rem] sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 font-mono tracking-tighter my-4 md:my-6 drop-shadow-sm whitespace-nowrap">
                   {timeLeft || "00 : 00 : 00"}
                 </div>
                 
-                <div className="flex items-center gap-2 text-slate-400 text-sm bg-slate-900/60 px-5 py-2 rounded-full border border-slate-700/60 shadow-inner">
-                  <span>সময়:</span>
+                <div className="flex items-center gap-2 text-slate-400 text-xs md:text-sm bg-slate-900/60 px-4 py-2 rounded-full border border-slate-700/60 shadow-inner">
+                  <span>পরবর্তী সময়:</span>
                   <span className="text-white font-semibold font-mono tracking-wide">{format(nextEvent.time, "hh:mm a")}</span>
                 </div>
               </>
@@ -256,9 +258,10 @@ const Ramadan = () => {
 
           {/* Today's Stats Card */}
           <div className="flex flex-col gap-4">
+            
              {/* Date Info */}
-            <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-3xl p-5 text-center shadow-lg backdrop-blur-sm">
-               <p className="text-emerald-400 font-bold text-xl mb-1">
+             <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-3xl p-5 text-center shadow-lg backdrop-blur-sm order-last lg:order-first">
+               <p className="text-emerald-400 font-bold text-lg md:text-xl mb-1">
                  {todayData?.ramadan ? `${todayData.ramadan} রমজান` : "রমজান সমাগত"}
                </p>
                <p className="text-emerald-200/60 text-xs font-medium uppercase tracking-wide">
@@ -266,32 +269,27 @@ const Ramadan = () => {
                </p>
             </div>
 
-
             {/* Sehri Card */}
-            <div className="flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-6 flex items-center justify-between hover:border-blue-500/30 transition-all shadow-lg hover:shadow-blue-900/10 group backdrop-blur-sm">
+            <div className="flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-5 md:p-6 flex items-center justify-between hover:border-blue-500/30 transition-all shadow-lg hover:shadow-blue-900/10 group backdrop-blur-sm">
               <div>
                 <p className="text-blue-400/80 text-xs font-bold uppercase tracking-widest mb-1 group-hover:text-blue-400 transition-colors">সেহরি শেষ</p>
-                <p className="text-3xl font-bold text-white font-mono tracking-tight">{todayData?.sehri || "--:--"}</p>
+                <p className="text-2xl md:text-3xl font-bold text-white font-mono tracking-tight">{todayData?.sehri || "--:--"}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20 group-hover:bg-blue-500/20 transition-all">
-                <Moon className="w-6 h-6 text-blue-400 fill-current" />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20 group-hover:bg-blue-500/20 transition-all">
+                <Moon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 fill-current" />
               </div>
             </div>
 
             {/* Iftar Card */}
-            <div className="flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-6 flex items-center justify-between hover:border-orange-500/30 transition-all shadow-lg hover:shadow-orange-900/10 group backdrop-blur-sm">
+            <div className="flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-5 md:p-6 flex items-center justify-between hover:border-orange-500/30 transition-all shadow-lg hover:shadow-orange-900/10 group backdrop-blur-sm">
               <div>
                 <p className="text-orange-400/80 text-xs font-bold uppercase tracking-widest mb-1 group-hover:text-orange-400 transition-colors">ইফতার শুরু</p>
-                <p className="text-3xl font-bold text-white font-mono tracking-tight">{todayData?.iftar || "--:--"}</p>
+                <p className="text-2xl md:text-3xl font-bold text-white font-mono tracking-tight">{todayData?.iftar || "--:--"}</p>
               </div>
-              <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center border border-orange-500/20 group-hover:bg-orange-500/20 transition-all">
-                <Sun className="w-6 h-6 text-orange-400 fill-current" />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center border border-orange-500/20 group-hover:bg-orange-500/20 transition-all">
+                <Sun className="w-5 h-5 md:w-6 md:h-6 text-orange-400 fill-current" />
               </div>
             </div>
-
-           
-
-
           </div>
         </div>
 
@@ -365,9 +363,9 @@ const Ramadan = () => {
                 href="https://islamicfoundation.gov.bd/pages/files/%E0%A7%A7%E0%A7%AA%E0%A7%AA%E0%A7%AC-%E0%A6%B9%E0%A6%BF%E0%A6%9C%E0%A6%B0%E0%A6%BF-%E0%A6%B8%E0%A6%BE%E0%A6%B2%E0%A7%87%E0%A6%B0-%E0%A6%AA%E0%A6%AC%E0%A6%BF%E0%A6%A4%E0%A7%8D%E0%A6%B0-%E0%A6%B0%E0%A6%AE%E0%A6%9C%E0%A6%BE%E0%A6%A8-%E0%A6%AE%E0%A6%BE%E0%A6%B8%E0%A7%87%E0%A6%B0-%E0%A6%B8%E0%A7%87%E0%A6%B9%E0%A6%B0%E0%A6%BF-%E0%A6%93-%E0%A6%87%E0%A6%AB%E0%A6%A4%E0%A6%BE%E0%A6%B0%E0%A7%87%E0%A6%B0-%E0%A6%B8%E0%A6%AE%E0%A7%9F%E0%A6%B8%E0%A7%82%E0%A6%9A%E0%A6%BF-367d47-6922da48933eb65569e03696" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="underline underline-offset-4 decoration-emerald-500/50"
+                className="underline underline-offset-4 decoration-emerald-500/50 hover:decoration-emerald-500"
               >
-               Click for Source: Islamic Foundation Bangladesh
+                Click for Source: Islamic Foundation Bangladesh
               </a>
             </div>
             
