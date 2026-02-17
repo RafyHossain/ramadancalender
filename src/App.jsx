@@ -358,15 +358,13 @@ const Ramadan = () => {
 
              {/* Source Link */}
             <div className="flex items-center gap-2 text-sm text-slate-400 hover:text-emerald-400 transition-colors">
-              <ExternalLink className="w-4 h-4" />
-              <a 
-                href="https://islamicfoundation.gov.bd/pages/files/%E0%A7%A7%E0%A7%AA%E0%A7%AA%E0%A7%AC-%E0%A6%B9%E0%A6%BF%E0%A6%9C%E0%A6%B0%E0%A6%BF-%E0%A6%B8%E0%A6%BE%E0%A6%B2%E0%A7%87%E0%A6%B0-%E0%A6%AA%E0%A6%AC%E0%A6%BF%E0%A6%A4%E0%A7%8D%E0%A6%B0-%E0%A6%B0%E0%A6%AE%E0%A6%9C%E0%A6%BE%E0%A6%A8-%E0%A6%AE%E0%A6%BE%E0%A6%B8%E0%A7%87%E0%A6%B0-%E0%A6%B8%E0%A7%87%E0%A6%B9%E0%A6%B0%E0%A6%BF-%E0%A6%93-%E0%A6%87%E0%A6%AB%E0%A6%A4%E0%A6%BE%E0%A6%B0%E0%A7%87%E0%A6%B0-%E0%A6%B8%E0%A6%AE%E0%A7%9F%E0%A6%B8%E0%A7%82%E0%A6%9A%E0%A6%BF-367d47-6922da48933eb65569e03696" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="underline underline-offset-4 decoration-emerald-500/50 hover:decoration-emerald-500"
+             
+              <p
+                
+                className=" decoration-emerald-500/50 hover:decoration-emerald-500"
               >
-                Click for Source: Islamic Foundation Bangladesh
-              </a>
+                Source: Islamic Foundation Bangladesh
+              </p>
             </div>
             
           </div>
