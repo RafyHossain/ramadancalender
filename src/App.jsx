@@ -244,7 +244,7 @@ const Ramadan = () => {
                 </div>
                 
                 <div className="flex items-center gap-2 text-slate-400 text-xs md:text-sm bg-slate-900/60 px-4 py-2 rounded-full border border-slate-700/60 shadow-inner">
-                  <span>পরবর্তী সময়:</span>
+                  <span>সময়:</span>
                   <span className="text-white font-semibold font-mono tracking-wide">{format(nextEvent.time, "hh:mm a")}</span>
                 </div>
               </>
@@ -262,8 +262,8 @@ const Ramadan = () => {
              {/* Date Info */}
              <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-3xl p-5 text-center shadow-lg backdrop-blur-sm order-last lg:order-first">
                <p className="text-emerald-400 font-bold text-lg md:text-xl mb-1">
-                 {todayData?.ramadan ? `${todayData.ramadan} রমজান` : "রমজান সমাগত"}
-               </p>
+  {todayData?.ramadan ? `${todayData.ramadan} রমজান` : "রমজান"}
+</p>
                <p className="text-emerald-200/60 text-xs font-medium uppercase tracking-wide">
                  {todayData ? format(new Date(todayData.date), "dd MMM yyyy") : format(new Date(), "dd MMM yyyy")}
                </p>
