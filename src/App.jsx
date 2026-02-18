@@ -10,9 +10,13 @@ const Ramadan = () => {
   // State
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  
   
   // Selection & Search State
-  const [selectedDistrict, setSelectedDistrict] = useState("natore");
+  const [selectedDistrict, setSelectedDistrict] = useState(() => {
+    return localStorage.getItem("savedDistrict") || "natore";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
@@ -23,6 +27,9 @@ const Ramadan = () => {
   
   // Refs
   const dropdownRef = useRef(null);
+  useEffect(() => {
+    localStorage.setItem("savedDistrict", selectedDistrict);
+  }, [selectedDistrict]);
 
   // 1. Fetch Data
   useEffect(() => {
