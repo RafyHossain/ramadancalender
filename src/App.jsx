@@ -363,7 +363,7 @@ const Ramadan = () => {
                 
                 className=" decoration-emerald-500/50 hover:decoration-emerald-500"
               >
-                Source: Islamic Foundation Bangladesh
+                Time Source: Islamic Foundation Bangladesh
               </p>
             </div>
             
