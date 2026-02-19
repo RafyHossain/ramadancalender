@@ -7,28 +7,25 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
-      includeAssets: ['icon-192.png', 'icon-512.png'],
+      injectRegister: 'script',
+      includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Ramadan 2026 - Sehri & Iftar Time',
-        short_name: 'Ramadan 2026',
-        description: 'Bangladesh Sehri & Iftar Time Schedule',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
-        display: 'standalone',
-        orientation: 'portrait',
+        name: 'Ramadan 2026',
+        short_name: 'Ramadan',
         start_url: '/',
+        display: 'standalone',
+        background_color: '#0f172a',
+        theme_color: '#0f172a',
         icons: [
           {
-            src: '/ramadanlogo.png',
+            src: 'ramadanlogo.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/ramadanlogo.png',
+            src: 'ramadanlogo.png',
             sizes: '512x512',
             type: 'image/png'
           }
