@@ -4,9 +4,6 @@ import './index.css'
 import App from './App.jsx'
 import { Analytics } from '@vercel/analytics/react';
 
-import { registerSW } from 'virtual:pwa-register'
-
-registerSW({ immediate: true })
 
 
 

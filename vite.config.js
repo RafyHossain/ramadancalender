@@ -10,6 +10,8 @@ export default defineConfig({
 
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'Ramadan 2026 - Sehri & Iftar Time',
         short_name: 'Ramadan 2026',
@@ -18,6 +20,7 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
+        start_url: '/',
         icons: [
           {
             src: '/ramadanlogo.png',
