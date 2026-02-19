@@ -10,7 +10,30 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script',
-      includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png'],
+
+      includeAssets: [
+        'favicon.ico',
+        'ramadanlogo.png',
+        'ramadan_data.json'
+      ],
+
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,png,svg,json}'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.endsWith('.json'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'json-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          }
+        ]
+      },
+
       manifest: {
         name: 'Ramadan 2026',
         short_name: 'Ramadan',
