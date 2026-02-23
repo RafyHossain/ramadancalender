@@ -134,41 +134,31 @@ const Ramadan = () => {
     return () => clearInterval(timer);
   }, [nextEvent, updateSchedule]);
 
-  // 5. Internal Scroll for Table Only
+  // 5. Internal Scroll for Table Only (Keeps page view at the top/countdown)
   useEffect(() => {
     if (activeRowRef.current && tableContainerRef.current) {
       setTimeout(() => {
         const container = tableContainerRef.current;
         const row = activeRowRef.current;
         
+        // Calculate position to center the row inside the table container
         const scrollPosition = row.offsetTop - container.offsetHeight / 2 + row.offsetHeight / 2;
         
         container.scrollTo({
           top: scrollPosition,
           behavior: "smooth"
         });
-      }, 500); 
+      }, 500); // 500ms delay ensures DOM is fully rendered
     }
   }, [todayData, selectedDistrict, data]);
 
-  // 6. FORCE AUTO UPDATE & CACHE CLEAR LOGIC (NEW)
+  // 6. SAFE AUTO-UPDATE CHECKER (No Cache Deletion)
   useEffect(() => {
-    // Service worker কে জোর করে নতুন আপডেট চেক করতে বলা
+    // এটি শুধু চেক করবে যে সার্ভারে নতুন কোনো আপডেট (sw.js) আছে কি না
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         for (let registration of registrations) {
           registration.update(); 
-        }
-      });
-    }
-
-    // পুরনো ক্যাশ ম্যানুয়ালি ডিলিট করা
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        for (let name of names) {
-          if (name.includes('json-cache') || name.includes('workbox')) {
-            caches.delete(name);
-          }
         }
       });
     }

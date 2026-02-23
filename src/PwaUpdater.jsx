@@ -18,8 +18,7 @@ const PwaUpdater = () => {
   if (!needRefresh) return null;
 
   return (
-    // এখানে bottom-5 পরিবর্তন করে top-5 দেওয়া হয়েছে
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] bg-slate-800 border border-emerald-500/50 shadow-2xl p-4 rounded-2xl flex items-center gap-4 animate-bounce">
+    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] bg-slate-800 border border-emerald-500/50 shadow-2xl p-4 rounded-2xl flex items-center gap-4 animate-bounce">
       <p className="text-white text-sm font-medium">Updated Version Available!</p>
       <button
         onClick={() => updateServiceWorker(true)}
