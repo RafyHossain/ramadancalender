@@ -29,7 +29,7 @@ const PwaUpdater = () => {
 
         <h3 className="text-xl font-bold text-white mb-2">Update Available!</h3>
         <p className="text-slate-300 text-sm mb-6 leading-relaxed">
-          অ্যাপটির নতুন ভার্সন এবং সঠিক সময়সূচি পেতে এখনই আপডেট করুন। 
+          অ্যাপটির নতুন ভার্সন পেতে এখনই আপডেট করুন। 
         </p>
 
         <div className="flex flex-col gap-3">
