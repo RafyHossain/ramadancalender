@@ -11,8 +11,6 @@ const Ramadan = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
-  
   // Selection & Search State
   const [selectedDistrict, setSelectedDistrict] = useState(() => {
     return localStorage.getItem("savedDistrict") || "natore";
@@ -27,6 +25,9 @@ const Ramadan = () => {
   
   // Refs
   const dropdownRef = useRef(null);
+  const activeRowRef = useRef(null); // Ref for active date row
+  const tableContainerRef = useRef(null); // Ref for the table scroll container
+
   useEffect(() => {
     localStorage.setItem("savedDistrict", selectedDistrict);
   }, [selectedDistrict]);
@@ -73,7 +74,7 @@ const Ramadan = () => {
         foundEvent = { 
           type: "sehri", 
           time: sehriTime, 
-          label: "সেহরির শেষ সময় বাকি",
+          label: "সেহরির শেষ সময় বাকি",
           dayData: day 
         };
         if (day.date !== todayStr) currentDayRecord = day;
@@ -84,7 +85,7 @@ const Ramadan = () => {
         foundEvent = { 
           type: "iftar", 
           time: iftarTime, 
-          label: "ইফতারের সময় বাকি",
+          label: "ইফতারের সময় বাকি",
           dayData: day 
         };
         currentDayRecord = day;
@@ -132,12 +133,36 @@ const Ramadan = () => {
     return () => clearInterval(timer);
   }, [nextEvent, updateSchedule]);
 
+  // 5. Internal Scroll for Table Only (Keeps page view at the top/countdown)
+  useEffect(() => {
+    if (activeRowRef.current && tableContainerRef.current) {
+      setTimeout(() => {
+        const container = tableContainerRef.current;
+        const row = activeRowRef.current;
+        
+        // Calculate position to center the row inside the table container
+        const scrollPosition = row.offsetTop - container.offsetHeight / 2 + row.offsetHeight / 2;
+        
+        container.scrollTo({
+          top: scrollPosition,
+          behavior: "smooth"
+        });
+      }, 500); // 500ms delay ensures DOM is fully rendered
+    }
+  }, [todayData, selectedDistrict, data]);
+
   // Search Logic
   const filteredDistricts = data?.districts.filter(d => 
     d.bnName.includes(searchQuery) || d.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const currentDistrictName = data?.districts.find(d => d.id === selectedDistrict)?.bnName;
+
+  // Real-time Past Event Checkers for Today's Cards
+  const now = new Date();
+  const todayStr = format(now, "yyyy-MM-dd");
+  const isTodaySehriPast = todayData ? now > parse(`${todayData.date} ${todayData.sehri}`, "yyyy-MM-dd hh:mm a", new Date()) : false;
+  const isTodayIftarPast = todayData ? now > parse(`${todayData.date} ${todayData.iftar}`, "yyyy-MM-dd hh:mm a", new Date()) : false;
 
   if (loading) {
     return (
@@ -162,7 +187,6 @@ const Ramadan = () => {
         <header className="relative z-50 flex flex-col md:flex-row justify-between items-center gap-4 mb-8 bg-slate-900/40 p-4 rounded-2xl border border-slate-700/50 backdrop-blur-xl shadow-lg">
           <div className="flex items-center gap-4 w-full md:w-auto">
             <div className="w-12 h-12 bg-gradient-to-br from-emerald-500/20 to-teal-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20 shadow-inner">
-              {/* Logo Image Placeholder - Replace src with your favicon path if needed */}
               <Moon className="text-emerald-400 w-6 h-6 fill-current" />
             </div>
             <div>
@@ -246,13 +270,12 @@ const Ramadan = () => {
                   <Clock className="w-3 h-3 md:w-4 md:h-4" /> {nextEvent.label}
                 </h2>
                 
-                {/* FIXED: Font size reduced for mobile and whitespace-nowrap added */}
                 <div className="relative z-10 text-[2.5rem] sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 font-mono tracking-tighter my-4 md:my-6 drop-shadow-sm whitespace-nowrap">
                   {timeLeft || "00 : 00 : 00"}
                 </div>
                 
                 <div className="flex items-center gap-2 text-slate-400 text-xs md:text-sm bg-slate-900/60 px-4 py-2 rounded-full border border-slate-700/60 shadow-inner">
-                  <span>সময়:</span>
+                  <span>সময়:</span>
                   <span className="text-white font-semibold font-mono tracking-wide">{format(nextEvent.time, "hh:mm a")}</span>
                 </div>
               </>
@@ -270,29 +293,29 @@ const Ramadan = () => {
              {/* Date Info */}
              <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-3xl p-5 text-center shadow-lg backdrop-blur-sm order-last lg:order-first">
                <p className="text-emerald-400 font-bold text-lg md:text-xl mb-1">
-  {todayData?.ramadan ? `${todayData.ramadan} রমজান` : "রমজান"}
-</p>
+                 {todayData?.ramadan ? `${todayData.ramadan} রমজান` : "রমজান"}
+               </p>
                <p className="text-emerald-200/60 text-xs font-medium uppercase tracking-wide">
                  {todayData ? format(new Date(todayData.date), "dd MMM yyyy") : format(new Date(), "dd MMM yyyy")}
                </p>
             </div>
 
-            {/* Sehri Card */}
-            <div className="flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-5 md:p-6 flex items-center justify-between hover:border-blue-500/30 transition-all shadow-lg hover:shadow-blue-900/10 group backdrop-blur-sm">
+            {/* Sehri Card (Disabled if past) */}
+            <div className={`flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-5 md:p-6 flex items-center justify-between transition-all shadow-lg group backdrop-blur-sm ${isTodaySehriPast ? "opacity-40 grayscale pointer-events-none" : "hover:border-blue-500/30 hover:shadow-blue-900/10"}`}>
               <div>
                 <p className="text-blue-400/80 text-xs font-bold uppercase tracking-widest mb-1 group-hover:text-blue-400 transition-colors">সেহরি শেষ</p>
-                <p className="text-2xl md:text-3xl font-bold text-white font-mono tracking-tight">{todayData?.sehri || "--:--"}</p>
+                <p className={`text-2xl md:text-3xl font-bold font-mono tracking-tight ${isTodaySehriPast ? "text-slate-500 line-through" : "text-white"}`}>{todayData?.sehri || "--:--"}</p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20 group-hover:bg-blue-500/20 transition-all">
                 <Moon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 fill-current" />
               </div>
             </div>
 
-            {/* Iftar Card */}
-            <div className="flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-5 md:p-6 flex items-center justify-between hover:border-orange-500/30 transition-all shadow-lg hover:shadow-orange-900/10 group backdrop-blur-sm">
+            {/* Iftar Card (Disabled if past) */}
+            <div className={`flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-5 md:p-6 flex items-center justify-between transition-all shadow-lg group backdrop-blur-sm ${isTodayIftarPast ? "opacity-40 grayscale pointer-events-none" : "hover:border-orange-500/30 hover:shadow-orange-900/10"}`}>
               <div>
                 <p className="text-orange-400/80 text-xs font-bold uppercase tracking-widest mb-1 group-hover:text-orange-400 transition-colors">ইফতার শুরু</p>
-                <p className="text-2xl md:text-3xl font-bold text-white font-mono tracking-tight">{todayData?.iftar || "--:--"}</p>
+                <p className={`text-2xl md:text-3xl font-bold font-mono tracking-tight ${isTodayIftarPast ? "text-slate-500 line-through" : "text-white"}`}>{todayData?.iftar || "--:--"}</p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center border border-orange-500/20 group-hover:bg-orange-500/20 transition-all">
                 <Sun className="w-5 h-5 md:w-6 md:h-6 text-orange-400 fill-current" />
@@ -306,15 +329,15 @@ const Ramadan = () => {
           <div className="p-6 border-b border-slate-800/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/30">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <Calendar className="w-5 h-5 text-emerald-500" />
-              <span>পুরো মাসের সময়সূচি</span>
+              <span>পুরো মাসের সময়সূচি</span>
             </h3>
             <span className="text-xs font-medium text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
               {currentDistrictName}
             </span>
           </div>
           
-          <div className="overflow-x-auto">
-            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+          <div className="overflow-x-auto relative">
+            <div ref={tableContainerRef} className="max-h-[400px] overflow-y-auto custom-scrollbar relative">
               <table className="w-full text-left text-sm text-slate-400">
                 <thead className="bg-slate-950/80 text-slate-300 sticky top-0 z-10 backdrop-blur-md shadow-sm">
                   <tr>
@@ -325,29 +348,44 @@ const Ramadan = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/40 bg-slate-900/20">
-                  {data?.schedule[selectedDistrict]?.map((day) => (
-                    <tr 
-                      key={day.ramadan} 
-                      className={`hover:bg-slate-800/40 transition-colors group ${day.ramadan === todayData?.ramadan ? "bg-emerald-500/10 hover:bg-emerald-500/15 border-l-4 border-l-emerald-500" : "border-l-4 border-l-transparent"}`}
-                    >
-                      <td className="p-5">
-                        <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shadow-sm transition-all ${day.ramadan === todayData?.ramadan ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-slate-200"}`}>
-                          {day.ramadan}
-                        </span>
-                      </td>
-                      <td className="p-5">
-                        <div className="flex flex-col">
-                          {/* DATE FORMAT UPDATE: dd MMM yyyy (e.g. 19 Feb 2026) */}
-                          <span className={`font-medium ${day.ramadan === todayData?.ramadan ? "text-white" : "text-slate-300"}`}>
-                             {format(new Date(day.date), "dd MMM yyyy")}
+                  {data?.schedule[selectedDistrict]?.map((day) => {
+                    const isDayPast = day.date < todayStr;
+                    const isToday = day.date === todayStr;
+                    
+                    let isSehriPast = isDayPast;
+                    let isIftarPast = isDayPast;
+                    
+                    if (isToday) {
+                      const sehriTime = parse(`${day.date} ${day.sehri}`, "yyyy-MM-dd hh:mm a", new Date());
+                      const iftarTime = parse(`${day.date} ${day.iftar}`, "yyyy-MM-dd hh:mm a", new Date());
+                      isSehriPast = now > sehriTime;
+                      isIftarPast = now > iftarTime;
+                    }
+
+                    return (
+                      <tr 
+                        key={day.ramadan} 
+                        ref={day.ramadan === todayData?.ramadan ? activeRowRef : null}
+                        className={`hover:bg-slate-800/40 transition-colors group ${day.ramadan === todayData?.ramadan ? "bg-emerald-500/10 hover:bg-emerald-500/15 border-l-4 border-l-emerald-500" : "border-l-4 border-l-transparent"} ${isDayPast ? "opacity-30 grayscale" : ""}`}
+                      >
+                        <td className="p-5">
+                          <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shadow-sm transition-all ${day.ramadan === todayData?.ramadan ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-slate-200"}`}>
+                            {day.ramadan}
                           </span>
-                          <span className="text-xs text-slate-500 mt-0.5">{day.day}</span>
-                        </div>
-                      </td>
-                      <td className="p-5 font-medium text-slate-200 font-mono tracking-tight">{day.sehri}</td>
-                      <td className="p-5 font-medium text-slate-200 font-mono tracking-tight">{day.iftar}</td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="p-5">
+                          <div className="flex flex-col">
+                            <span className={`font-medium ${day.ramadan === todayData?.ramadan ? "text-white" : "text-slate-300"}`}>
+                               {format(new Date(day.date), "dd MMM yyyy")}
+                            </span>
+                            <span className="text-xs text-slate-500 mt-0.5">{day.day}</span>
+                          </div>
+                        </td>
+                        <td className={`p-5 font-medium font-mono tracking-tight ${isSehriPast ? "text-slate-500 line-through" : "text-slate-200"}`}>{day.sehri}</td>
+                        <td className={`p-5 font-medium font-mono tracking-tight ${isIftarPast ? "text-slate-500 line-through" : "text-slate-200"}`}>{day.iftar}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -368,7 +406,6 @@ const Ramadan = () => {
             <div className="flex items-center gap-2 text-sm text-slate-400 hover:text-emerald-400 transition-colors">
              
               <p
-                
                 className=" decoration-emerald-500/50 hover:decoration-emerald-500"
               >
                 Time Source: Islamic Foundation Bangladesh
