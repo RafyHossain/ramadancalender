@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt', // 'autoUpdate' থেকে 'prompt' করা হলো যাতে ইউজারকে নোটিফিকেশন দেখানো যায়
+      registerType: 'prompt', 
       injectRegister: 'script',
 
       includeAssets: [
@@ -36,21 +36,25 @@ export default defineConfig({
 
       manifest: {
         name: 'Ramadan 2026',
-        short_name: 'Ramadan',
+        short_name: 'Ramadan 2026', 
+        description: 'Ramadan Sehri and Iftar Schedule 2026',
         start_url: '/',
         display: 'standalone',
+        orientation: 'portrait',
         background_color: '#0f172a',
         theme_color: '#0f172a',
         icons: [
           {
             src: 'ramadanlogo.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: 'ramadanlogo.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'maskable' 
           }
         ]
       }
