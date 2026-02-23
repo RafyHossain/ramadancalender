@@ -2,10 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { format, parse, differenceInSeconds } from "date-fns";
 import { 
   Search, MapPin, Moon, Sun, Calendar, 
-  Clock, ChevronDown, Loader, X, ExternalLink, Code 
+  Clock, ChevronDown, Loader, X, ExternalLink, Code, BellRing, BellOff 
 } from "lucide-react";
 import PwaUpdater from "./PwaUpdater";
-
 
 const Ramadan = () => {
   // State
@@ -19,19 +18,104 @@ const Ramadan = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
+  // Notification State
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    const saved = localStorage.getItem("notificationsEnabled");
+    return saved !== null ? saved === "true" : false; // Default false
+  });
+
+  // Sweet Alert States
+  const [showPermissionAlert, setShowPermissionAlert] = useState(false);
+  const [eventAlertMessage, setEventAlertMessage] = useState(""); 
+  
   // Time & Logic State
   const [todayData, setTodayData] = useState(null);
   const [timeLeft, setTimeLeft] = useState("");
   const [nextEvent, setNextEvent] = useState(null);
+  const [completedCount, setCompletedCount] = useState(0); 
   
   // Refs
   const dropdownRef = useRef(null);
-  const activeRowRef = useRef(null); // Ref for active date row
-  const tableContainerRef = useRef(null); // Ref for the table scroll container
+  const activeRowRef = useRef(null); 
+  const tableContainerRef = useRef(null); 
+  const triggeredNotifications = useRef(new Set()); 
 
   useEffect(() => {
     localStorage.setItem("savedDistrict", selectedDistrict);
   }, [selectedDistrict]);
+
+  useEffect(() => {
+    localStorage.setItem("notificationsEnabled", notificationsEnabled);
+  }, [notificationsEnabled]);
+
+  // ৫ সেকেন্ডের Sweet Alert: শুধুমাত্র অ্যাপ প্রথমবার লোড হলে একবার চেক করবে
+  useEffect(() => {
+    let isOff = false;
+    
+    if ("Notification" in window && Notification.permission !== "granted") {
+      isOff = true;
+    }
+    if (localStorage.getItem("notificationsEnabled") !== "true") {
+      isOff = true;
+    }
+
+    if (isOff) {
+      setShowPermissionAlert(true);
+      const timer = setTimeout(() => {
+        setShowPermissionAlert(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, []); 
+
+  // Notification Toggle Handler (Manual Bell Button)
+  const toggleNotifications = () => {
+    if (notificationsEnabled) {
+      setNotificationsEnabled(false);
+      setShowPermissionAlert(false);
+    } else {
+      if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission().then(() => {
+          setNotificationsEnabled(true);
+          setShowPermissionAlert(false); 
+        });
+      } else {
+        setNotificationsEnabled(true);
+        setShowPermissionAlert(false);
+      }
+    }
+  };
+
+  // Force Request Permission from Sweet Alert Button
+  const requestPermissionNow = () => {
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission().then(() => {
+        setNotificationsEnabled(true);
+        setShowPermissionAlert(false);
+      });
+    } else {
+      setNotificationsEnabled(true);
+      setShowPermissionAlert(false);
+    }
+  };
+
+  // Push Notification Trigger Logic (UPDATED: User must manually dismiss)
+  const triggerNotification = useCallback((message) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("Ramadan 2026 Alert", {
+        body: message,
+        icon: "/ramadanlogo.png",
+        silent: true,
+        requireInteraction: true 
+      });
+    } else {
+      
+      setEventAlertMessage(message);
+      setTimeout(() => {
+        setEventAlertMessage("");
+      }, 5000);
+    }
+  }, []);
 
   // 1. Fetch Data
   useEffect(() => {
@@ -55,7 +139,7 @@ const Ramadan = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 3. SMART SCHEDULER
+  // 3. SMART SCHEDULER & COMPLETED COUNTER
   const updateSchedule = useCallback(() => {
     if (!data || !data.schedule[selectedDistrict]) return;
 
@@ -66,12 +150,17 @@ const Ramadan = () => {
     let currentDayRecord = districtSchedule.find((d) => d.date === todayStr);
     
     let foundEvent = null;
+    let completed = 0; 
 
     for (let day of districtSchedule) {
       const sehriTime = parse(`${day.date} ${day.sehri}`, "yyyy-MM-dd hh:mm a", new Date());
       const iftarTime = parse(`${day.date} ${day.iftar}`, "yyyy-MM-dd hh:mm a", new Date());
 
-      if (now < sehriTime) {
+      if (now > iftarTime) {
+        completed++;
+      }
+
+      if (now < sehriTime && !foundEvent) {
         foundEvent = { 
           type: "sehri", 
           time: sehriTime, 
@@ -79,10 +168,7 @@ const Ramadan = () => {
           dayData: day 
         };
         if (day.date !== todayStr) currentDayRecord = day;
-        break;
-      }
-      
-      if (now < iftarTime) {
+      } else if (now < iftarTime && !foundEvent) {
         foundEvent = { 
           type: "iftar", 
           time: iftarTime, 
@@ -90,10 +176,10 @@ const Ramadan = () => {
           dayData: day 
         };
         currentDayRecord = day;
-        break;
       }
     }
 
+    setCompletedCount(completed); 
     setTodayData(currentDayRecord || null);
     setNextEvent(foundEvent);
 
@@ -103,7 +189,7 @@ const Ramadan = () => {
     updateSchedule();
   }, [updateSchedule]);
 
-  // 4. Timer Logic
+  // 4. Timer Logic with Notification Trigger
   useEffect(() => {
     if (!nextEvent || !nextEvent.time) return;
 
@@ -115,6 +201,21 @@ const Ramadan = () => {
         setTimeLeft("00 : 00 : 00");
         setTimeout(() => updateSchedule(), 1000);
         return false;
+      }
+
+      
+      if (notificationsEnabled) {
+       
+        const threshold = nextEvent.type === 'sehri' ? 5 * 60 : 5 * 60; 
+        const eventKey = `${nextEvent.type}-${format(now, "yyyy-MM-dd")}`; 
+
+        if (diff <= threshold && diff > threshold - 2 && !triggeredNotifications.current.has(eventKey)) {
+          triggeredNotifications.current.add(eventKey);
+          const alertMsg = nextEvent.type === 'sehri' 
+            ? "সেহরির সময় শেষ হতে আর মাত্র ৫ মিনিট বাকি!" 
+            : "ইফতারের সময় হতে আর মাত্র ৫ মিনিট বাকি!";
+          triggerNotification(alertMsg);
+        }
       }
 
       const h = Math.floor(diff / 3600);
@@ -132,29 +233,25 @@ const Ramadan = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [nextEvent, updateSchedule]);
+  }, [nextEvent, updateSchedule, notificationsEnabled, triggerNotification]);
 
-  // 5. Internal Scroll for Table Only (Keeps page view at the top/countdown)
+  // 5. Internal Scroll for Table Only
   useEffect(() => {
     if (activeRowRef.current && tableContainerRef.current) {
       setTimeout(() => {
         const container = tableContainerRef.current;
         const row = activeRowRef.current;
-        
-        // Calculate position to center the row inside the table container
         const scrollPosition = row.offsetTop - container.offsetHeight / 2 + row.offsetHeight / 2;
-        
         container.scrollTo({
           top: scrollPosition,
           behavior: "smooth"
         });
-      }, 500); // 500ms delay ensures DOM is fully rendered
+      }, 500); 
     }
   }, [todayData, selectedDistrict, data]);
 
-  // 6. SAFE AUTO-UPDATE CHECKER (No Cache Deletion)
+  // 6. SAFE AUTO-UPDATE CHECKER
   useEffect(() => {
-    // এটি শুধু চেক করবে যে সার্ভারে নতুন কোনো আপডেট (sw.js) আছে কি না
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         for (let registration of registrations) {
@@ -171,7 +268,6 @@ const Ramadan = () => {
 
   const currentDistrictName = data?.districts.find(d => d.id === selectedDistrict)?.bnName;
 
-  // Real-time Past Event Checkers for Today's Cards
   const now = new Date();
   const todayStr = format(now, "yyyy-MM-dd");
   const isTodaySehriPast = todayData ? now > parse(`${todayData.date} ${todayData.sehri}`, "yyyy-MM-dd hh:mm a", new Date()) : false;
@@ -186,10 +282,61 @@ const Ramadan = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-200 font-sans selection:bg-emerald-500/30 overflow-x-hidden flex flex-col">
-      <PwaUpdater></PwaUpdater>
+    <div className="min-h-screen bg-[#0f172a] text-slate-200 font-sans selection:bg-emerald-500/30 overflow-x-hidden flex flex-col relative">
+      <PwaUpdater />
+      
+     
+      {showPermissionAlert && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-slate-800 border border-emerald-500/30 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl shadow-emerald-900/20 transform transition-all scale-100 animate-slideUp">
+            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BellRing className="w-8 h-8 text-emerald-400 animate-bounce" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Turn on Notification</h3>
+            <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+              সেহরি ও ইফতারের সঠিক সময়ে অটোমেটিক অ্যালার্ট পেতে নোটিফিকেশনটি অন করে রাখুন।
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button 
+                onClick={() => setShowPermissionAlert(false)}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-700 transition-colors"
+              >
+                Later
+              </button>
+              <button 
+                onClick={requestPermissionNow}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 transition-all active:scale-95"
+              >
+                Okey
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Timer Event Sweet Alert  */}
+      {eventAlertMessage && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-emerald-500/50 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl shadow-emerald-500/20 transform transition-all scale-100 animate-slideUp">
+            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-5 border border-emerald-500/20 shadow-inner">
+              <Clock className="w-10 h-10 text-emerald-400 animate-pulse" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-3 tracking-wide">সময় ঘনিয়ে এসেছে!</h3>
+            <p className="text-slate-300 text-base mb-6 leading-relaxed font-medium">
+              {eventAlertMessage}
+            </p>
+            <button 
+              onClick={() => setEventAlertMessage("")}
+              className="w-full py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/50 transition-all active:scale-95"
+            >
+              ঠিক আছে
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Background Gradients */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[20%] -left-[10%] w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[120px] animate-pulse-slow" />
         <div className="absolute top-[20%] -right-[10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
       </div>
@@ -208,7 +355,6 @@ const Ramadan = () => {
             </div>
           </div>
 
-          {/* Searchable Dropdown */}
           <div className="relative w-full md:w-72" ref={dropdownRef}>
             <button 
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -221,7 +367,6 @@ const Ramadan = () => {
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />
             </button>
 
-            {/* Dropdown Content */}
             {isDropdownOpen && (
               <div className="absolute top-full left-0 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[100] animate-fadeIn origin-top">
                 <div className="p-2 border-b border-slate-700 bg-slate-800/95 backdrop-blur-sm">
@@ -236,10 +381,7 @@ const Ramadan = () => {
                       autoFocus
                     />
                     {searchQuery && (
-                      <X 
-                        className="w-4 h-4 text-slate-500 cursor-pointer hover:text-white"
-                        onClick={() => setSearchQuery("")}
-                      />
+                      <X className="w-4 h-4 text-slate-500 cursor-pointer hover:text-white" onClick={() => setSearchQuery("")} />
                     )}
                   </div>
                 </div>
@@ -273,13 +415,23 @@ const Ramadan = () => {
           <div className="lg:col-span-2 bg-gradient-to-br from-slate-800/40 via-slate-900/60 to-slate-950/80 border border-slate-700/50 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl backdrop-blur-md">
             <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[80px] opacity-20 ${nextEvent?.type === 'sehri' ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
             
+            {/* Notification Toggle Button */}
+            <button 
+              onClick={toggleNotifications}
+              title={notificationsEnabled ? "ON" : "OFF"}
+              className={`absolute top-4 left-4 md:top-6 md:left-6 p-2.5 rounded-full border backdrop-blur-sm transition-all shadow-md active:scale-95 z-20 ${notificationsEnabled ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:text-white"}`}
+            >
+              {notificationsEnabled ? <BellRing className="w-5 h-5 md:w-6 md:h-6" /> : <BellOff className="w-5 h-5 md:w-6 md:h-6" />}
+            </button>
+
+            {/* Event Icon */}
             <div className="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-white/5 rounded-full border border-white/5 backdrop-blur-sm">
                {nextEvent?.type === 'sehri' ? <Moon className="w-5 h-5 md:w-6 md:h-6 text-blue-300" /> : <Sun className="w-5 h-5 md:w-6 md:h-6 text-orange-300" />}
             </div>
             
             {nextEvent ? (
               <>
-                <h2 className={`text-sm md:text-lg font-medium tracking-wide mb-2 flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/50 border border-slate-700/50 ${nextEvent?.type === 'sehri' ? 'text-blue-300' : 'text-orange-300'}`}>
+                <h2 className={`text-sm md:text-lg font-medium tracking-wide mb-2 mt-4 md:mt-0 flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/50 border border-slate-700/50 ${nextEvent?.type === 'sehri' ? 'text-blue-300' : 'text-orange-300'}`}>
                   <Clock className="w-3 h-3 md:w-4 md:h-4" /> {nextEvent.label}
                 </h2>
                 
@@ -302,18 +454,23 @@ const Ramadan = () => {
 
           {/* Today's Stats Card */}
           <div className="flex flex-col gap-4">
-            
-             {/* Date Info */}
-             <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-3xl p-5 text-center shadow-lg backdrop-blur-sm order-last lg:order-first">
+             {/* Date Info & Completed Stats */}
+             <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-3xl p-5 text-center shadow-lg backdrop-blur-sm order-last lg:order-first flex flex-col justify-center items-center relative overflow-hidden">
+               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
+               
                <p className="text-emerald-400 font-bold text-lg md:text-xl mb-1">
-                 {todayData?.ramadan ? `${todayData.ramadan} রমজান` : "রমজান"}
+                 {todayData?.ramadan ? ` ${todayData.ramadan} রমজান` : "রমজান"}
                </p>
-               <p className="text-emerald-200/60 text-xs font-medium uppercase tracking-wide">
+               <p className="text-emerald-200/60 text-xs font-medium uppercase tracking-wide mb-4">
                  {todayData ? format(new Date(todayData.date), "dd MMM yyyy") : format(new Date(), "dd MMM yyyy")}
                </p>
+
+               <div className="bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 rounded-xl w-full flex justify-between items-center shadow-inner">
+                  <span className="text-emerald-300/80 text-xs font-medium">সম্পন্ন রোজা:</span>
+                  <span className="font-bold text-emerald-400 text-lg leading-none">{completedCount} <span className="text-xs font-normal">টি</span></span>
+               </div>
             </div>
 
-            {/* Sehri Card (Disabled if past) */}
             <div className={`flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-5 md:p-6 flex items-center justify-between transition-all shadow-lg group backdrop-blur-sm ${isTodaySehriPast ? "opacity-40 grayscale pointer-events-none" : "hover:border-blue-500/30 hover:shadow-blue-900/10"}`}>
               <div>
                 <p className="text-blue-400/80 text-xs font-bold uppercase tracking-widest mb-1 group-hover:text-blue-400 transition-colors">সেহরি শেষ</p>
@@ -324,7 +481,6 @@ const Ramadan = () => {
               </div>
             </div>
 
-            {/* Iftar Card (Disabled if past) */}
             <div className={`flex-1 bg-gradient-to-r from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-3xl p-5 md:p-6 flex items-center justify-between transition-all shadow-lg group backdrop-blur-sm ${isTodayIftarPast ? "opacity-40 grayscale pointer-events-none" : "hover:border-orange-500/30 hover:shadow-orange-900/10"}`}>
               <div>
                 <p className="text-orange-400/80 text-xs font-bold uppercase tracking-widest mb-1 group-hover:text-orange-400 transition-colors">ইফতার শুরু</p>
@@ -408,25 +564,16 @@ const Ramadan = () => {
         {/* --- Footer --- */}
         <footer className="relative z-10 border-t border-slate-800/60 pt-6 mt-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
-            
-            {/* Developer Credit */}
             <div className="flex items-center gap-2 text-sm font-medium bg-slate-900/50 px-4 py-2 rounded-full border border-slate-800 hover:border-emerald-500/30 transition-colors group">
               <Code className="w-4 h-4 text-emerald-500 group-hover:rotate-12 transition-transform" />
               <span className="text-slate-300">Developed by <span className="text-emerald-400">Rafy Hossain</span></span>
             </div>
-
-             {/* Source Link */}
             <div className="flex items-center gap-2 text-sm text-slate-400 hover:text-emerald-400 transition-colors">
-             
-              <p
-                className=" decoration-emerald-500/50 hover:decoration-emerald-500"
-              >
+              <p className=" decoration-emerald-500/50 hover:decoration-emerald-500">
                 Time Source: Islamic Foundation Bangladesh
               </p>
             </div>
-            
           </div>
-          
           <div className="text-center mt-4 text-sm text-slate-400">
             © 2026 Ramadan. All rights reserved.
           </div>
