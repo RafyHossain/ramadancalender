@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { format, parse, differenceInSeconds } from "date-fns";
 import { 
   Search, MapPin, Moon, Sun, Calendar, 
-  Clock, ChevronDown, Loader, X, ExternalLink, Code, BellRing, BellOff 
+  Clock, ChevronDown, Loader, X, ExternalLink, Code 
 } from "lucide-react";
 import PwaUpdater from "./PwaUpdater";
 
@@ -18,16 +18,6 @@ const Ramadan = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
-  // Notification State
-  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-    const saved = localStorage.getItem("notificationsEnabled");
-    return saved !== null ? saved === "true" : false; // Default false
-  });
-
-  // Sweet Alert States
-  const [showPermissionAlert, setShowPermissionAlert] = useState(false);
-  const [eventAlertMessage, setEventAlertMessage] = useState(""); 
-  
   // Time & Logic State
   const [todayData, setTodayData] = useState(null);
   const [timeLeft, setTimeLeft] = useState("");
@@ -38,84 +28,10 @@ const Ramadan = () => {
   const dropdownRef = useRef(null);
   const activeRowRef = useRef(null); 
   const tableContainerRef = useRef(null); 
-  const triggeredNotifications = useRef(new Set()); 
 
   useEffect(() => {
     localStorage.setItem("savedDistrict", selectedDistrict);
   }, [selectedDistrict]);
-
-  useEffect(() => {
-    localStorage.setItem("notificationsEnabled", notificationsEnabled);
-  }, [notificationsEnabled]);
-
-  // ৫ সেকেন্ডের Sweet Alert: শুধুমাত্র অ্যাপ প্রথমবার লোড হলে একবার চেক করবে
-  useEffect(() => {
-    let isOff = false;
-    
-    if ("Notification" in window && Notification.permission !== "granted") {
-      isOff = true;
-    }
-    if (localStorage.getItem("notificationsEnabled") !== "true") {
-      isOff = true;
-    }
-
-    if (isOff) {
-      setShowPermissionAlert(true);
-      const timer = setTimeout(() => {
-        setShowPermissionAlert(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, []); 
-
-  // Notification Toggle Handler (Manual Bell Button)
-  const toggleNotifications = () => {
-    if (notificationsEnabled) {
-      setNotificationsEnabled(false);
-      setShowPermissionAlert(false);
-    } else {
-      if ("Notification" in window && Notification.permission !== "granted") {
-        Notification.requestPermission().then(() => {
-          setNotificationsEnabled(true);
-          setShowPermissionAlert(false); 
-        });
-      } else {
-        setNotificationsEnabled(true);
-        setShowPermissionAlert(false);
-      }
-    }
-  };
-
-  // Force Request Permission from Sweet Alert Button
-  const requestPermissionNow = () => {
-    if ("Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission().then(() => {
-        setNotificationsEnabled(true);
-        setShowPermissionAlert(false);
-      });
-    } else {
-      setNotificationsEnabled(true);
-      setShowPermissionAlert(false);
-    }
-  };
-
-  // Push Notification Trigger Logic (UPDATED: User must manually dismiss)
-  const triggerNotification = useCallback((message) => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("Ramadan 2026 Alert", {
-        body: message,
-        icon: "/ramadanlogo.png",
-        silent: true,
-        requireInteraction: true 
-      });
-    } else {
-      
-      setEventAlertMessage(message);
-      setTimeout(() => {
-        setEventAlertMessage("");
-      }, 5000);
-    }
-  }, []);
 
   // 1. Fetch Data
   useEffect(() => {
@@ -128,7 +44,7 @@ const Ramadan = () => {
       .catch((err) => console.error("Error fetching data:", err));
   }, []);
 
-  // 2. Click Outside Handler
+  // 2. Click Outside Handler for Dropdown
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -189,7 +105,7 @@ const Ramadan = () => {
     updateSchedule();
   }, [updateSchedule]);
 
-  // 4. Timer Logic with Notification Trigger
+  // 4. Timer Logic
   useEffect(() => {
     if (!nextEvent || !nextEvent.time) return;
 
@@ -201,21 +117,6 @@ const Ramadan = () => {
         setTimeLeft("00 : 00 : 00");
         setTimeout(() => updateSchedule(), 1000);
         return false;
-      }
-
-      
-      if (notificationsEnabled) {
-       
-        const threshold = nextEvent.type === 'sehri' ? 5 * 60 : 5 * 60; 
-        const eventKey = `${nextEvent.type}-${format(now, "yyyy-MM-dd")}`; 
-
-        if (diff <= threshold && diff > threshold - 2 && !triggeredNotifications.current.has(eventKey)) {
-          triggeredNotifications.current.add(eventKey);
-          const alertMsg = nextEvent.type === 'sehri' 
-            ? "সেহরির সময় শেষ হতে আর মাত্র ৫ মিনিট বাকি!" 
-            : "ইফতারের সময় হতে আর মাত্র ৫ মিনিট বাকি!";
-          triggerNotification(alertMsg);
-        }
       }
 
       const h = Math.floor(diff / 3600);
@@ -233,7 +134,7 @@ const Ramadan = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [nextEvent, updateSchedule, notificationsEnabled, triggerNotification]);
+  }, [nextEvent, updateSchedule]);
 
   // 5. Internal Scroll for Table Only
   useEffect(() => {
@@ -285,56 +186,6 @@ const Ramadan = () => {
     <div className="min-h-screen bg-[#0f172a] text-slate-200 font-sans selection:bg-emerald-500/30 overflow-x-hidden flex flex-col relative">
       <PwaUpdater />
       
-     
-      {showPermissionAlert && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="bg-slate-800 border border-emerald-500/30 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl shadow-emerald-900/20 transform transition-all scale-100 animate-slideUp">
-            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BellRing className="w-8 h-8 text-emerald-400 animate-bounce" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Turn on Notification</h3>
-            <p className="text-slate-300 text-sm mb-6 leading-relaxed">
-              সেহরি ও ইফতারের সঠিক সময়ে অটোমেটিক অ্যালার্ট পেতে নোটিফিকেশনটি অন করে রাখুন।
-            </p>
-            <div className="flex gap-3 justify-center">
-              <button 
-                onClick={() => setShowPermissionAlert(false)}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-700 transition-colors"
-              >
-                Later
-              </button>
-              <button 
-                onClick={requestPermissionNow}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 transition-all active:scale-95"
-              >
-                Okey
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 2. Timer Event Sweet Alert  */}
-      {eventAlertMessage && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-emerald-500/50 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl shadow-emerald-500/20 transform transition-all scale-100 animate-slideUp">
-            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-5 border border-emerald-500/20 shadow-inner">
-              <Clock className="w-10 h-10 text-emerald-400 animate-pulse" />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-3 tracking-wide">সময় ঘনিয়ে এসেছে!</h3>
-            <p className="text-slate-300 text-base mb-6 leading-relaxed font-medium">
-              {eventAlertMessage}
-            </p>
-            <button 
-              onClick={() => setEventAlertMessage("")}
-              className="w-full py-3 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/50 transition-all active:scale-95"
-            >
-              ঠিক আছে
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Background Gradients */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[20%] -left-[10%] w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[120px] animate-pulse-slow" />
@@ -415,15 +266,6 @@ const Ramadan = () => {
           <div className="lg:col-span-2 bg-gradient-to-br from-slate-800/40 via-slate-900/60 to-slate-950/80 border border-slate-700/50 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl backdrop-blur-md">
             <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[80px] opacity-20 ${nextEvent?.type === 'sehri' ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
             
-            {/* Notification Toggle Button */}
-            <button 
-              onClick={toggleNotifications}
-              title={notificationsEnabled ? "ON" : "OFF"}
-              className={`absolute top-4 left-4 md:top-6 md:left-6 p-2.5 rounded-full border backdrop-blur-sm transition-all shadow-md active:scale-95 z-20 ${notificationsEnabled ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:text-white"}`}
-            >
-              {notificationsEnabled ? <BellRing className="w-5 h-5 md:w-6 md:h-6" /> : <BellOff className="w-5 h-5 md:w-6 md:h-6" />}
-            </button>
-
             {/* Event Icon */}
             <div className="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-white/5 rounded-full border border-white/5 backdrop-blur-sm">
                {nextEvent?.type === 'sehri' ? <Moon className="w-5 h-5 md:w-6 md:h-6 text-blue-300" /> : <Sun className="w-5 h-5 md:w-6 md:h-6 text-orange-300" />}
