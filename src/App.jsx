@@ -134,23 +134,45 @@ const Ramadan = () => {
     return () => clearInterval(timer);
   }, [nextEvent, updateSchedule]);
 
-  // 5. Internal Scroll for Table Only (Keeps page view at the top/countdown)
+  // 5. Internal Scroll for Table Only
   useEffect(() => {
     if (activeRowRef.current && tableContainerRef.current) {
       setTimeout(() => {
         const container = tableContainerRef.current;
         const row = activeRowRef.current;
         
-        // Calculate position to center the row inside the table container
         const scrollPosition = row.offsetTop - container.offsetHeight / 2 + row.offsetHeight / 2;
         
         container.scrollTo({
           top: scrollPosition,
           behavior: "smooth"
         });
-      }, 500); // 500ms delay ensures DOM is fully rendered
+      }, 500); 
     }
   }, [todayData, selectedDistrict, data]);
+
+  // 6. FORCE AUTO UPDATE & CACHE CLEAR LOGIC (NEW)
+  useEffect(() => {
+    // Service worker কে জোর করে নতুন আপডেট চেক করতে বলা
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          registration.update(); 
+        }
+      });
+    }
+
+    // পুরনো ক্যাশ ম্যানুয়ালি ডিলিট করা
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        for (let name of names) {
+          if (name.includes('json-cache') || name.includes('workbox')) {
+            caches.delete(name);
+          }
+        }
+      });
+    }
+  }, []);
 
   // Search Logic
   const filteredDistricts = data?.districts.filter(d => 
@@ -165,8 +187,6 @@ const Ramadan = () => {
   const isTodaySehriPast = todayData ? now > parse(`${todayData.date} ${todayData.sehri}`, "yyyy-MM-dd hh:mm a", new Date()) : false;
   const isTodayIftarPast = todayData ? now > parse(`${todayData.date} ${todayData.iftar}`, "yyyy-MM-dd hh:mm a", new Date()) : false;
 
-
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
@@ -174,30 +194,6 @@ const Ramadan = () => {
       </div>
     );
   }
-
-
-  useEffect(() => {
-    // 1. Force Service Worker to check for updates
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (let registration of registrations) {
-          registration.update(); // Background e notun version khujbe
-        }
-      });
-    }
-
-    // 2. Clear old manual caches (jodi thake)
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        for (let name of names) {
-          // 'json-cache' ba onnanno cache auto delete korbe
-          if (name.includes('json-cache') || name.includes('workbox')) {
-            caches.delete(name);
-          }
-        }
-      });
-    }
-  }, []);
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 font-sans selection:bg-emerald-500/30 overflow-x-hidden flex flex-col">
