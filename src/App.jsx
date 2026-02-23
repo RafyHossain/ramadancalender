@@ -4,6 +4,7 @@ import {
   Search, MapPin, Moon, Sun, Calendar, 
   Clock, ChevronDown, Loader, X, ExternalLink, Code 
 } from "lucide-react";
+import PwaUpdater from "./PwaUpdater";
 
 
 const Ramadan = () => {
@@ -174,7 +175,7 @@ const Ramadan = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 font-sans selection:bg-emerald-500/30 overflow-x-hidden flex flex-col">
-      
+      <PwaUpdater></PwaUpdater>
       {/* Background Gradients */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-[20%] -left-[10%] w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[120px] animate-pulse-slow" />

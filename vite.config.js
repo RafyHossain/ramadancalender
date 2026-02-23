@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt', // 'autoUpdate' থেকে 'prompt' করা হলো যাতে ইউজারকে নোটিফিকেশন দেখানো যায়
       injectRegister: 'script',
 
       includeAssets: [
@@ -22,12 +22,12 @@ export default defineConfig({
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.endsWith('.json'),
-            handler: 'CacheFirst',
+            handler: 'StaleWhileRevalidate', 
             options: {
               cacheName: 'json-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 30 
               }
             }
           }
