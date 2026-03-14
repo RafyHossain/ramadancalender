@@ -5,6 +5,7 @@ import {
   Clock, ChevronDown, Loader, X, ExternalLink, Code 
 } from "lucide-react";
 import PwaUpdater from "./PwaUpdater";
+import EidCard from "./EidCard";
 
 const Ramadan = () => {
   // State
@@ -287,10 +288,7 @@ const Ramadan = () => {
                 </div>
               </>
             ) : (
-               <div className="text-center py-10">
-                 <h2 className="text-2xl font-bold text-slate-500">রমজান শেষ!</h2>
-                 <p className="text-slate-600">ঈদ মোবারক</p>
-               </div>
+              <EidCard></EidCard>
             )}
           </div>
 
@@ -420,6 +418,7 @@ const Ramadan = () => {
             © 2026 Ramadan. All rights reserved.
           </div>
         </footer>
+        
 
       </div>
     </div>
